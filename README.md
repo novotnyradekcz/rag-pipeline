@@ -59,7 +59,8 @@ sudo apt-get install ffmpeg
 ### 2. Clone or Navigate to Project
 
 ```bash
-cd /Users/rano/Documents/AI\ Academy/HW4/rag_pipeline
+git clone https://github.com/novotnyradekcz/rag-pipeline
+cd rag-pipeline
 ```
 
 ### 3. Create Virtual Environment
