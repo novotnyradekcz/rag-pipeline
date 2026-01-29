@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 import argparse
+from datetime import datetime
+import json
 
 # Add modules to path
 sys.path.append(str(Path(__file__).parent / "modules"))
@@ -202,8 +204,91 @@ class RAGPipeline:
         )
     
     def interactive_mode(self):
-        """Start interactive Q&A mode."""
-        self.rag_system.interactive_qa()
+        """Start interactive Q&A mode and save session transcript."""
+        session_history = self.rag_system.interactive_qa()
+        
+        # Save session transcript if there were any queries
+        if session_history:
+            self._save_session_log(session_history)
+    
+    def _save_query_log(self, result: dict):
+        """Save a single query and answer to a log file."""
+        timestamp = datetime.now()
+        log_dir = Path(__file__).parent / "logs"
+        log_dir.mkdir(exist_ok=True)
+        
+        # Create filename with timestamp
+        filename = f"query_{timestamp.strftime('%Y%m%d_%H%M%S')}.txt"
+        filepath = log_dir / filename
+        
+        # Format log content
+        log_content = []
+        log_content.append("="*80)
+        log_content.append(f"RAG Query Log")
+        log_content.append(f"Timestamp: {timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
+        log_content.append(f"LLM Provider: {self.rag_system.llm_provider}")
+        log_content.append(f"Model: {self.rag_system.model_name}")
+        log_content.append("="*80)
+        log_content.append(f"\nQuery:\n{result['query']}\n")
+        log_content.append(f"\nAnswer:\n{result['answer']}\n")
+        
+        if 'context' in result:
+            log_content.append("\nSources:")
+            for i, ctx in enumerate(result['context'], 1):
+                source = ctx['metadata'].get('source', 'unknown')
+                score = ctx['score']
+                log_content.append(f"  {i}. {source} (relevance: {score:.3f})")
+        
+        log_content.append("\n" + "="*80)
+        
+        # Write to file
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(log_content))
+        
+        print(f"\n✓ Query log saved to: {filepath.name}")
+    
+    def _save_session_log(self, session_history: List[dict]):
+        """Save interactive session transcript to a log file."""
+        timestamp = datetime.now()
+        log_dir = Path(__file__).parent / "logs"
+        log_dir.mkdir(exist_ok=True)
+        
+        # Create filename with timestamp
+        filename = f"session_{timestamp.strftime('%Y%m%d_%H%M%S')}.txt"
+        filepath = log_dir / filename
+        
+        # Format log content
+        log_content = []
+        log_content.append("="*80)
+        log_content.append(f"RAG Interactive Session Transcript")
+        log_content.append(f"Session Start: {timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
+        log_content.append(f"LLM Provider: {self.rag_system.llm_provider}")
+        log_content.append(f"Model: {self.rag_system.model_name}")
+        log_content.append(f"Total Queries: {len(session_history)}")
+        log_content.append("="*80)
+        
+        # Add each Q&A exchange
+        for i, exchange in enumerate(session_history, 1):
+            log_content.append(f"\n{'='*80}")
+            log_content.append(f"Query #{i}")
+            log_content.append(f"{'='*80}")
+            log_content.append(f"\nQuestion:\n{exchange['query']}\n")
+            log_content.append(f"\nAnswer:\n{exchange['answer']}\n")
+            
+            if 'sources' in exchange:
+                log_content.append("\nSources:")
+                for j, src in enumerate(exchange['sources'], 1):
+                    log_content.append(f"  {j}. {src['source']} (relevance: {src['score']:.3f})")
+        
+        log_content.append("\n" + "="*80)
+        log_content.append(f"Session End: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        log_content.append("="*80)
+        
+        # Write to file
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(log_content))
+        
+        print(f"\n✓ Session transcript saved to: {filepath.name}")
 
 
 def main():
@@ -313,6 +398,9 @@ def main():
         print("Sources:")
         for i, ctx in enumerate(result['context'], 1):
             print(f"  {i}. {ctx['metadata']['source']} (score: {ctx['score']:.3f})")
+        
+        # Save query log
+        pipeline._save_query_log(result)
     
     elif args.interactive:
         pipeline.interactive_mode()

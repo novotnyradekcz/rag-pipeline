@@ -217,10 +217,13 @@ Please answer the question based on the context provided above."""
     
     def interactive_qa(self):
         """
-        Interactive question-answering loop.
+        Interactive question-answering loop with session tracking.
+        Returns the session history for logging.
         """
         print("\n=== RAG Interactive Q&A ===")
         print("Type your question or 'quit' to exit.\n")
+        
+        session_history = []
         
         while True:
             query = input("Question: ").strip()
@@ -240,11 +243,22 @@ Please answer the question based on the context provided above."""
             
             # Show sources
             print("\nSources:")
+            sources = []
             for i, chunk in enumerate(result['context'], 1):
                 score = chunk['score']
                 source = chunk['metadata'].get('source', 'unknown')
                 print(f"  {i}. {source} (relevance: {score:.2f})")
+                sources.append({'source': source, 'score': score})
             print()
+            
+            # Track session history
+            session_history.append({
+                'query': query,
+                'answer': result['answer'],
+                'sources': sources
+            })
+        
+        return session_history
 
 
 if __name__ == "__main__":

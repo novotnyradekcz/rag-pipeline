@@ -18,6 +18,11 @@ data/*.mp4
 chroma_db/
 *.db
 
+# Logs (keep directory structure but ignore log files)
+logs/*.txt
+logs/*.log
+!logs/README.md
+
 # IDE
 .vscode/
 .idea/
